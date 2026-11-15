@@ -2,6 +2,8 @@ name: build
 on:
   push:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,3 +26,15 @@ jobs:
           name: mod-jar
           path: build/libs/*.jar
           if-no-files-found: error
+      - name: List jar contents
+        run: |
+          ls -la build/libs
+          for j in build/libs/*.jar; do echo "== $j"; unzip -l "$j"; done
+      - name: Publish jar as the latest release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          JAR=$(ls build/libs/*.jar | grep -v sources | head -1)
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest "$JAR" --title "Latest build" --notes "Built from $GITHUB_SHA" --target "$GITHUB_SHA"
