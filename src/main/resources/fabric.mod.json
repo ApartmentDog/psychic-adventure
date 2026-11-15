@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "enderling",
+	"version": "${version}",
+	"name": "Enderlings",
+	"description": "Replaces the enderman with four smooth sculpted enderling models. Each enderman gets one of the four at random.",
+	"authors": ["Evyr"],
+	"license": "All-Rights-Reserved",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["com.enderling.client.EnderlingClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
