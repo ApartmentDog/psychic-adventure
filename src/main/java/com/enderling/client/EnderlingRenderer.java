@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
@@ -71,7 +71,7 @@ public class EnderlingRenderer extends EntityRenderer<LivingEntity, EnderlingRen
 		p.death = state.death;
 		final float[][] mats = Rig.pose(mesh, p);
 
-		RenderType type = RenderTypes.entityCutoutNoCull(TEXTURES[state.variant]);
+		RenderType type = RenderTypes.entityCutout(TEXTURES[state.variant]);
 		final int light = state.lightCoords;
 		collector.submitCustomGeometry(poseStack, type, (pose, consumer) -> MeshDrawer.draw(mesh, mats, pose, consumer, light));
 	}
