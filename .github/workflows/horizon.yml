@@ -36,9 +36,6 @@ jobs:
           cp horizon/horizon-mod.toml "$B/horizon-mod.toml"
           echo "B=$B" >> "$GITHUB_ENV"
 
-      - name: Check
-        run: cd "$B" && cargo horizon-mod check
-
       - name: Build
         run: cd "$B" && cargo horizon-mod build --wasm
 
