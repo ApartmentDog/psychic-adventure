@@ -1,0 +1,7 @@
+id = "enderling"
+name = "Enderling"
+version = "0.1.0"
+description = "Replaces the enderman with four sculpted characters, picked per enderman."
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

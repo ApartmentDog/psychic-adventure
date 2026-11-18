@@ -1,0 +1,59 @@
+name: Build Horizon mod
+
+on:
+  push:
+    paths:
+      - 'horizon/**'
+      - '.github/workflows/horizon.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-horizon-mod
+        run: cargo install --locked --git https://github.com/horizon-rust/horizon cargo-horizon-mod
+
+      - name: Scaffold a wasm project (this pins the current SDK)
+        run: |
+          mkdir -p "$RUNNER_TEMP/scaffold"
+          cd "$RUNNER_TEMP/scaffold"
+          cargo horizon-mod new enderling --template wasm
+          echo "--- scaffold Cargo.toml"; cat enderling/Cargo.toml
+          echo "--- scaffold horizon-mod.toml"; cat enderling/horizon-mod.toml
+
+      - name: Lay our sources over the scaffold
+        run: |
+          B="$RUNNER_TEMP/build"
+          cp -a "$RUNNER_TEMP/scaffold/enderling" "$B"
+          rm -rf "$B/src"
+          cp -r horizon/src horizon/meshes horizon/assets "$B/"
+          cp horizon/horizon-mod.toml "$B/horizon-mod.toml"
+          echo "B=$B" >> "$GITHUB_ENV"
+
+      - name: Check
+        run: cd "$B" && cargo horizon-mod check
+
+      - name: Build
+        run: cd "$B" && cargo horizon-mod build --wasm
+
+      - name: Package contents
+        run: |
+          cd "$B"
+          ls -la target/horizon-mod/
+          unzip -l target/horizon-mod/enderling.hmod || tar -tvf target/horizon-mod/enderling.hmod || true
+
+      - name: Publish as the horizon-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete horizon-latest --yes --cleanup-tag || true
+          gh release create horizon-latest "$B/target/horizon-mod/enderling.hmod" \
+            --title "Horizon mod (latest)" \
+            --notes "Enderling for Horizon, built from $GITHUB_SHA. Put enderling.hmod in horizon-mods and add mod.enderling:true to horizon-mods.txt." \
+            --target "$GITHUB_SHA"
