@@ -5,6 +5,8 @@ pub struct Quad {
     pub idx: [u32; 4],
     /// u0, v0, u1, v1 in sixteenths of the texture, as `BlockEntityDrawContext::quad` takes them.
     pub uv: [f32; 4],
+    /// The smooth normal of the quad (its vertices' normals, averaged) in the part's own frame.
+    pub n: [f32; 3],
 }
 
 pub struct Part {
@@ -51,7 +53,15 @@ impl Cursor<'_> {
 /// rectangle are (u0,v0) (u0,v1) (u1,v1) (u1,v0) in the order the corners are given, so the best
 /// start corner of the four (a rotation keeps the winding) is the one whose least-squares
 /// rectangle is closest.
-fn fit(idx: [u32; 4], uv: &[[f32; 2]]) -> Quad {
+fn fit(idx: [u32; 4], uv: &[[f32; 2]], nrm: &[[f32; 3]]) -> Quad {
+    let mut n = [0.0f32; 3];
+    for &i in &idx {
+        for k in 0..3 {
+            n[k] += nrm[i as usize][k];
+        }
+    }
+    let len = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]).sqrt().max(1e-9);
+    let n = n.map(|c| c / len);
     let mut best: Option<(f32, Quad)> = None;
     for s in 0..4 {
         let o = [idx[s], idx[(s + 1) % 4], idx[(s + 2) % 4], idx[(s + 3) % 4]];
@@ -65,7 +75,7 @@ fn fit(idx: [u32; 4], uv: &[[f32; 2]]) -> Quad {
             .map(|j| (c[j][0] - t[j][0]).powi(2) + (c[j][1] - t[j][1]).powi(2))
             .sum();
         if best.as_ref().is_none_or(|(e, _)| err < *e) {
-            best = Some((err, Quad { idx: o, uv: [u0 * 16.0, v0 * 16.0, u1 * 16.0, v1 * 16.0] }));
+            best = Some((err, Quad { idx: o, uv: [u0 * 16.0, v0 * 16.0, u1 * 16.0, v1 * 16.0], n }));
         }
     }
     best.unwrap().1
@@ -93,9 +103,11 @@ impl Mesh {
             let ni = c.i32()? as usize;
             let mut pos = Vec::with_capacity(vc);
             let mut uv = Vec::with_capacity(vc);
+            let mut nrm = Vec::with_capacity(vc);
             for _ in 0..vc {
                 let v: [f32; 8] = std::array::from_fn(|_| c.f32().unwrap_or(0.0));
                 pos.push([v[0], v[1], v[2]]);
+                nrm.push([v[3], v[4], v[5]]);
                 uv.push([v[6], v[7]]);
             }
             let mut quads = Vec::with_capacity(ni / 4);
@@ -104,7 +116,7 @@ impl Mesh {
                 if q.iter().any(|&i| i as usize >= vc) {
                     return Err("mesh index out of range".into());
                 }
-                quads.push(fit(q, &uv));
+                quads.push(fit(q, &uv, &nrm));
             }
             parts.push(Part { name, parent, pivot, pos, quads });
         }
