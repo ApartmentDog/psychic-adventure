@@ -6,6 +6,10 @@ on:
       - 'horizon/**'
       - '.github/workflows/horizon.yml'
   workflow_dispatch:
+    inputs:
+      horizon:
+        description: "Horizon build the mod is made for: nightly, nightly-YYYY-MM-DD or a commit sha (the game's log starts with its build, e.g. 6d765e0)"
+        default: nightly
 
 permissions:
   contents: write
@@ -24,6 +28,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/scaffold"
           cd "$RUNNER_TEMP/scaffold"
           cargo horizon-mod new enderling --template wasm
+          cd enderling
+          cargo horizon-mod update --horizon "${{ inputs.horizon || 'nightly' }}"
+          cd ..
           echo "--- scaffold Cargo.toml"; cat enderling/Cargo.toml
           echo "--- scaffold horizon-mod.toml"; cat enderling/horizon-mod.toml
 
